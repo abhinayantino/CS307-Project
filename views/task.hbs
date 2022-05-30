@@ -1,0 +1,242 @@
+<br>
+<a href="/" class="btn btn-primary">Home</a>
+<div>
+  <div class="row">
+    <div class="col-md-8">
+      <form action="" method="post">
+        <select id="prog-lang" name="lang">
+          <option value="C++">C++</option>
+          <option value="Python">Python</option>
+          <option value="C">C</option>
+        </select>
+        
+        <div style="display: flex; flex-direction:row;  width:90vw">
+          <div style="width: 50%">
+            <textarea id="code-screen" cols="1000" name="code">
+            
+        </textarea>
+          </div>
+          
+        <br>
+        
+        <div class="col" style="display: flex; flex-direction:column;margin:10px;">
+          <div class="row" style="margin: 10px;">
+            Input:
+            <br>
+            <textarea id="input-text" style="resize:none" rows="10" cols="159" name="input"></textarea>
+          </div>
+          <div class="row" style="margin: 10px;">
+            Output:
+            <br>
+            <textarea id="output-text" style="resize:none" rows="10" cols="159" name="output">{{#if output}}{{output}}{{/if}}</textarea>
+          </div>
+        </div>
+        
+        </div>
+        <br>
+        
+        <input type="submit" value="Run"> </form>
+    
+    </div>
+
+    <div  id="chatbox"> {{!-- Video Call --}}
+      <button style="float:right; "onclick="handleChat()">Chat</button>
+      <div class="card" id="chatt" style=" margin-top:50px;display: block;">
+        
+        <div class="card-header">CHAT ROOM <span class="float-end" id="chatbox-username">
+                    {{#if user}}
+                    {{user.name}}
+                    {{/if}}
+
+                </span> </div>
+        <div class="card-body" style="height: 200px">
+          <br>
+          <br>
+          <ul class="list-group" style="height: 200px; overflow-y: scroll" id="chatbox-listMessages"></ul>
+        </div>
+        <div class="card-footer" style="height: 150px">
+          <div class="input-group">
+            <input type="text" class="form-control" placeholder="Enter message" id="userMessage" /> <span class="input-group-btn">
+                        <button type="button" class="btn btn primary" onclick="sendMessage()">SEND</button>
+                    </span> </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+  
+<input type="hidden" value="{{roomId}}" id="roomId"/>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.25.0/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.25.0/mode/javascript/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.61.1/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.61.1/mode/cmake/cmake.min.js"></script>
+
+
+
+
+
+<script src="/plugins/ot/ot.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="https://unpkg.com/peerjs@1.3.1/dist/peerjs.min.js"></script>
+<script>
+  var handleChat = function() {
+    if (document.getElementById("chatt").style.display=="block") {
+        document.getElementById("chatt").style.display="none";
+        
+    } else {
+        document.getElementById("chatt").style.display="block";
+    }
+    
+  };
+</script>
+<script>
+  var EditorClient = ot.EditorClient;
+  var SocketIOAdapter = ot.SocketIOAdapter;
+  var CodeMirrorAdapter = ot.CodeMirrorAdapter;
+  var socket = io.connect('http://localhost:3000');
+  var editor = CodeMirror.fromTextArea(document.getElementById("code-screen"), {
+    lineNumbers: true,
+    theme: "monokai"
+  });
+  var cmClient;
+  function init(str, revision, clients, serverAdapter) {
+    editor.setValue(str);
+    cmClient = window.cmClient = new EditorClient(
+      revision, clients, serverAdapter, new CodeMirrorAdapter(editor)
+    );
+  };
+  socket.on('doc', function(obj) {
+    init(obj.str, obj.revision, obj.clients, new SocketIOAdapter(socket));
+  });
+  var username = $("#chatbox-username").val();
+  if(username === "") {
+    var userId = Math.floor(Math.random() * 9999).toString();
+    username = "User" + userId;
+    $("#chatbox-username").text(username);
+  };
+  var roomId = $('#roomId').val();
+  socket.emit('joinRoom', {room: roomId, username: username});
+  var userMessage = function(name, text) {
+    return ('<li class="media"> <div class="media-body"> <div class="media">' +
+      '<div class="media-body"' +
+      '<b>' + name + '</b> : ' + text +
+      '<hr/> </div></div></div></li>'
+    );
+  };
+  var sendMessage = function() {
+    var userMessage = $('#userMessage').val();
+    socket.emit('chatMessage', {message: userMessage, username: username});
+    $('#userMessage').val("");
+  };
+  socket.on('chatMessage', function(data) {
+    $('#chatbox-listMessages').append(userMessage(data.username, data.message));
+  });
+  const PRE = "DELTA"
+const SUF = "MEET"
+var room_id;
+var getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+var local_stream;
+function createRoom(){
+    console.log("Creating Room")
+    var k = window.location.href;
+    let room = k.slice(k.length-4, k.length);
+    if(room == " " || room == "")   {
+        alert("Please enter room number")
+        return;
+    }
+    room_id = PRE+room+SUF;
+    let peer = new Peer(room_id)
+    peer.on('open', (id)=>{
+        console.log("Peer Connected with ID: ", id)
+        //hideModal()
+        document.getElementById("Turn-off").hidden = true;
+        getUserMedia({video: true, audio: true}, (stream)=>{
+            local_stream = stream;
+            setLocalStream(local_stream)
+        },(err)=>{
+            console.log(err)
+        })
+        //notify("Waiting for peer to join.")
+    })
+    peer.on('call',(call)=>{
+        call.answer(local_stream);
+        call.on('stream',(stream)=>{
+            setRemoteStream(stream)
+        })
+    })
+}
+
+function setLocalStream(stream){
+    
+    let video = document.getElementById("my-video");
+    video.srcObject = stream;
+    video.muted = true;
+    video.play();
+}
+function setRemoteStream(stream){
+   
+    let video = document.getElementById("second-video");
+    video.srcObject = stream;
+    video.play();
+}
+/*
+function hideModal(){
+    document.getElementById("entry-modal").hidden = true
+}
+
+function notify(msg){
+    let notification = document.getElementById("notification")
+    notification.innerHTML = msg
+    notification.hidden = false
+    setTimeout(()=>{
+        notification.hidden = true;
+    }, 3000)
+}
+*/
+function joinRoom(){
+    console.log("Joining Room")
+    var k = window.location.href;
+    let room = k.slice(k.length-4, k.length);
+    if(room == " " || room == "")   {
+        alert("Please enter room number")
+        return;
+    }
+    room_id = PRE+room+SUF;
+    //hideModal()
+    document.getElementById("Turn-off").hidden = true;
+    let peer = new Peer()
+    peer.on('open', (id)=>{
+        console.log("Connected with Id: "+id)
+        getUserMedia({video: true, audio: true}, (stream)=>{
+            local_stream = stream;
+            setLocalStream(local_stream)
+            //notify("Joining peer")
+            let call = peer.call(room_id, stream)
+            call.on('stream', (stream)=>{
+                setRemoteStream(stream);
+            })
+        }, (err)=>{
+            console.log(err)
+        })
+
+    })
+}
+function  voice_toggle(){
+    if (document.getElementById("voice-btn").innerHTML=="MUTE") {
+        document.getElementById("voice-btn").innerHTML="UNMUTE";
+        
+    } else {
+        document.getElementById("voice-btn").innerHTML="MUTE";
+    }
+    local_stream.getAudioTracks()[0].enabled = !(local_stream.getAudioTracks()[0].enabled);
+    var k = window.location.href;
+    console.log(k.slice(k.length-4, k.length));
+    
+}
+function  video_toggle(){
+
+    local_stream.getVideoTracks()[0].enabled = !(local_stream.getVideoTracks()[0].enabled);
+}
+</script>
