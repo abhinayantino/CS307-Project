@@ -7,7 +7,7 @@ var transporter = nodemailer.createTransport(config.mailer);
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
-  res.render('index', { title: 'CCI-A platform for sharing code' });
+  res.render('index', { title: 'GROUP CODING PLATFORM' });
 });
 
 
