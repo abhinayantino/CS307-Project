@@ -25,7 +25,7 @@ router.post('/createTask', function(req, res) {
 
 router.get('/createTask', function(req, res) {
     var newTask = new Task();
-
+ 
     newTask.save(function(err, data) {
         if (err) {
             console.log(err);
