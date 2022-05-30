@@ -224,20 +224,6 @@ function joinRoom(){
 
     })
 }
-function  voice_toggle(){
-    if (document.getElementById("voice-btn").innerHTML=="MUTE") {
-        document.getElementById("voice-btn").innerHTML="UNMUTE";
-        
-    } else {
-        document.getElementById("voice-btn").innerHTML="MUTE";
-    }
-    local_stream.getAudioTracks()[0].enabled = !(local_stream.getAudioTracks()[0].enabled);
-    var k = window.location.href;
-    console.log(k.slice(k.length-4, k.length));
-    
-}
-function  video_toggle(){
 
-    local_stream.getVideoTracks()[0].enabled = !(local_stream.getVideoTracks()[0].enabled);
-}
+
 </script>
